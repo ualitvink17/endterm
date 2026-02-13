@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Professor Manager</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+        .controls { margin-bottom: 20px; padding: 10px; background: #f4f4f4; border-radius: 5px; }
+        input, select, button { margin: 5px; padding: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #007bff; color: white; cursor: pointer; }
+        .form-container { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; display: none; }
+        .btn-red { background-color: #dc3545; color: white; border: none; cursor: pointer; }
+        .btn-green { background-color: #28a745; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<h1>Professor Management System</h1>
+
+<div class="controls">
+    <input type="text" id="searchInput" placeholder="Search by name...">
+    <input type="text" id="deptFilter" placeholder="Filter by Department">
+    <select id="sortSelect">
+        <option value="">Sort By...</option>
+        <option value="name">Name</option>
+        <option value="experience">Experience</option>
+        <option value="city">City</option>
+    </select>
+    <button onclick="loadProfessors()" class="btn-green">Apply</button>
+    <button onclick="showForm()" class="btn-green" style="float: right;">+ Add New</button>
+</div>
+
+<div id="professorForm" class="form-container">
+    <h3 id="formTitle">Add Professor</h3>
+    <input type="hidden" id="pId">
+    <input type="text" id="pName" placeholder="Name" required>
+    <input type="text" id="pDept" placeholder="Department">
+    <input type="text" id="pCity" placeholder="City">
+    <input type="number" id="pExp" placeholder="Years of Experience">
+    <br><br>
+    <button onclick="saveProfessor()" class="btn-green">Save</button>
+    <button onclick="hideForm()" class="btn-red">Cancel</button>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Department</th>
+        <th>City</th>
+        <th>Exp (Years)</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
+
+<script>
+    const API_URL = '/api/professors';
+
+    // reas
+    async function loadProfessors() {
+        const search = document.getElementById('searchInput').value;
+        const dept = document.getElementById('deptFilter').value;
+        const sort = document.getElementById('sortSelect').value;
+
+        const params = new URLSearchParams({ search, department: dept, sortBy: sort });
+        const res = await fetch(`${API_URL}?${params}`);
+        const data = await res.json();
+
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        data.forEach(p => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${p.id}</td>
+                    <td>${p.name}</td>
+                    <td>${p.department}</td>
+                    <td>${p.city}</td>
+                    <td>${p.experienceYears}</td>
+                    <td>
+                        <button onclick="editProfessor(${p.id}, '${p.name}', '${p.department}', '${p.city}', ${p.experienceYears})">Edit</button>
+                        <button class="btn-red" onclick="deleteProfessor(${p.id})">Delete</button>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    // create, update
+    async function saveProfessor() {
+        const name = document.getElementById('pName').value.trim();
+        const dept = document.getElementById('pDept').value.trim();
+        const city = document.getElementById('pCity').value.trim();
+        const exp = document.getElementById('pExp').value;
+
+        if (!name || !dept || !city || !exp) {
+            alert("Пожалуйста, заполните все поля!");
+            return; // Прерываем функцию, запрос не отправится
+        }
+
+        const id = document.getElementById('pId').value;
+
+        const professor = {
+            name: name,
+            department: dept,
+            city: city,
+            experienceYears: exp
+        };
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_URL}/${id}` : API_URL;
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(professor)
+            });
+            if (!res.ok) throw new Error(await res.text());
+
+            hideForm();
+            loadProfessors();
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    }
+
+    // delete
+    async function deleteProfessor(id) {
+        if (!confirm('Are you sure?')) return;
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        loadProfessors();
+    }
+
+    function showForm() {
+        document.getElementById('professorForm').style.display = 'block';
+        clearForm();
+    }
+    function hideForm() { document.getElementById('professorForm').style.display = 'none'; }
+    function clearForm() {
+        document.getElementById('pId').value = '';
+        document.getElementById('pName').value = '';
+        document.getElementById('pDept').value = '';
+        document.getElementById('pCity').value = '';
+        document.getElementById('pExp').value = '';
+        document.getElementById('formTitle').innerText = "Add Professor";
+    }
+    function editProfessor(id, name, dept, city, exp) {
+        showForm();
+        document.getElementById('formTitle').innerText = "Edit Professor";
+        document.getElementById('pId').value = id;
+        document.getElementById('pName').value = name;
+        document.getElementById('pDept').value = dept;
+        document.getElementById('pCity').value = city;
+        document.getElementById('pExp').value = exp;
+    }
+
+    loadProfessors();
+</script>
+
+</body>
+</html>
