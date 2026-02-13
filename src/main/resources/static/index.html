@@ -61,7 +61,7 @@
 <script>
     const API_URL = '/api/professors';
 
-    // reas
+    // read
     async function loadProfessors() {
         const search = document.getElementById('searchInput').value;
         const dept = document.getElementById('deptFilter').value;
@@ -98,7 +98,7 @@
 
         if (!name || !dept || !city || !exp) {
             alert("Пожалуйста, заполните все поля!");
-            return; // Прерываем функцию, запрос не отправится
+            return;
         }
 
         const id = document.getElementById('pId').value;
